@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Examen final débogage hiver 2026 — formulaire sécurisé</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style_print.css">
+</head>
+<body class="no-select">
+<div class="top-monitor screen-only">
+  <div class="monitor-row">
+    <div class="timer-box">Temps restant<br><span class="timer-value" id="timerValue">02:00:00</span></div>
+    <div class="access-box" id="studentCodeInfo">Code d’accès non validé</div>
+    <div class="incident-box" id="incidentBox"><strong>Incidents : 0</strong></div>
+    <div class="progress-box"><span id="progressText">0 % rempli</span><div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div></div>
+    <div id="finalLockBanner" class="final-lock-banner hidden"></div>
+    <button class="screen-btn export" onclick="exportPdf()">Exporter en PDF</button>
+    <button class="screen-btn warn" onclick="returnFullscreen()">Revenir en plein écran</button>
+  </div>
+</div>
+
+<div id="accessGate" class="overlay">
+  <div class="overlay-card access-card">
+    <h2>Accès à l’examen</h2>
+    <p><strong>Examen final débogage hiver 2026</strong><br>LÉA-Travaux &gt; Évaluations</p>
+    <p>Entrez votre identité et le code personnel à 10 chiffres remis par l’enseignant en classe. Le code sera marqué comme utilisé dans Firebase et ne pourra plus ouvrir l’examen sur un autre appareil.</p>
+    <label class="gate-label" for="gateStudentName">Prénom et nom</label>
+    <input id="gateStudentName" type="text" placeholder="PRÉNOM ET NOM" autocomplete="off">
+    <label class="gate-label" for="gateStudentId">N° d’étudiant(e)</label>
+    <input id="gateStudentId" type="text" placeholder="N° D’ÉTUDIANT(E)" autocomplete="off">
+    <label class="gate-label" for="gateStudentGroup">Groupe</label>
+    <input id="gateStudentGroup" type="text" placeholder="GROUPE" autocomplete="off">
+    <label class="gate-label" for="accessCode">Code d’accès personnel</label>
+    <input id="accessCode" type="text" placeholder="CODE À 10 CHIFFRES" autocomplete="off" inputmode="numeric" maxlength="10" pattern="[0-9]{10}">
+    <p class="small muted">Le code, l’heure d’activation, le nom et le numéro étudiant apparaîtront dans le PDF exporté.</p>
+    <div class="actions"><button onclick="validateAccess()">Entrer dans l’examen</button></div>
+    <div id="accessError" class="error-msg"></div>
+  </div>
+</div>
+
+<div id="fullscreenLock" class="overlay hidden">
+  <div class="overlay-card lock-message">
+    <h2>Plein écran obligatoire</h2>
+    <p id="fsLockText">Vous avez quitté le plein écran. Revenez en plein écran avant la fin du délai.</p>
+    <div class="count"><span id="fsCountdown">10</span>s</div>
+    <p>Au-delà de 10 secondes, l’incident sera mentionné dans le PDF exporté et pourra être considéré comme plagiat.</p>
+    <button onclick="returnFullscreen()">Revenir en plein écran</button>
+  </div>
+</div>
+
+<div class="exam-shell" id="examContent">
+
+<section class="page">
+  <div class="doc-head">
+    <div class="left-lines">
+      <div>Enseignant : <span style="font-weight:400">Anis Ghaieb</span></div>
+      <div>Cours : <span style="font-weight:400">PROGRAMMATION II: DÉBOGAGE INFORMATIQUE (420-2A4-UC)</span></div>
+      <div>Session : <span style="font-weight:400">Hiver 2026</span></div>
+    </div>
+    <img src="assets/images/logo-college.png" class="logo" alt="Collège Universel Campus Montréal">
+  </div>
+  <div class="thick-rule"></div>
+  <h1 class="exam-title">EXAMEN FINAL</h1>
+  <div class="green-title">IDENTIFICATION DE L’ÉTUDIANT(E) :</div>
+  <table class="info-table identity-table">
+    <colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"></colgroup>
+    <tr><td class="label">PRÉNOM ET NOM :</td><td class="value"><input class="line-input wide" data-answer name="ident_nom" id="ident_nom" autocomplete="off" placeholder="" ></td><td class="label">DATE :</td><td class="value"><strong>12 mai 2026</strong></td></tr>
+    <tr><td class="label">N° D’ÉTUDIANT(E) :</td><td class="value"><input class="line-input wide" data-answer name="ident_no" id="ident_no" autocomplete="off" placeholder="" ></td><td class="label">GROUPE :</td><td class="value"><input class="line-input medium" data-answer name="ident_groupe" id="ident_groupe" autocomplete="off" placeholder="" ></td></tr>
+  </table>
+  <table class="info-table">
+    <tr><th>Durée de l’examen</th><td>2h00</td></tr>
+    <tr><th>Nombre de pages</th><td>13 pages incluant celle-ci — version web formulaire</td></tr>
+    <tr><th>Publication</th><td>LÉA-Travaux &gt; Évaluations — <strong>Examen final débogage hiver 2026</strong></td></tr>
+    <tr><th>Code d’accès utilisé</th><td><span id="accessCodePrint">Code non validé</span></td></tr>
+    <tr><th>Heure d’activation du code</th><td><span id="accessTimePrint">Heure non validée</span></td></tr>
+    <tr><th>Identité validée et verrouillée</th><td><span id="lockedIdentityPrint">Identité non validée</span></td></tr>
+    <tr><th>ID de session</th><td><span id="sessionIdPrint">Session non validée</span></td></tr>
+    <tr><th>Empreinte de vérification</th><td><span id="verificationFingerprintPrint">Empreinte non validée</span></td></tr>
+    <tr><th>Source de vérification</th><td><span id="verificationSourcePrint">Source non validée</span></td></tr>
+    <tr><th>Heure d’export final</th><td><span id="finalExportTimePrint">Export final non effectué</span></td></tr>
+    <tr><th>État de la copie</th><td><span id="finalExportStatusPrint">Copie non encore verrouillée</span></td></tr>
+    <tr><th>Empreinte de copie finale</th><td><span id="finalAnswerHashPrint">Empreinte non générée</span></td></tr>
+    <tr><th>Parties de l’examen</th><td><ul style="margin:0 0 0 20px"><li><strong>Parties 1 et 2 :</strong> théoriques, à remplir dans ce formulaire et à exporter en PDF.</li><li><strong>Partie 3 :</strong> pratique, à réaliser séparément sur LÉA après la fermeture de cet examen.</li></ul></td></tr>
+  </table>
+  <div class="green-title">Consignes générales</div>
+  <table class="info-table">
+    <tr><th>Modalités de l’évaluation</th><td>Examen réalisé individuellement. L’étudiant doit inscrire clairement son <strong>nom</strong>, son <strong>prénom</strong> et toute autre information demandée. Les réponses doivent être saisies directement dans les zones prévues. La qualité du <strong>français</strong> écrit peut être <strong>prise en compte</strong> dans la correction. Pour plus de détails, référez-vous au plan de cours.</td></tr>
+    <tr><th>Matériel autorisé</th><td>Stylo ou crayon si nécessaire pour brouillon personnel. Notes personnelles de l’étudiant autorisées selon les consignes données par l’enseignant.</td></tr>
+    <tr><th>Règles et matériel interdit</th><td>L’étudiant doit travailler seul, en silence, et respecter les consignes de l’enseignant. Toute communication avec un autre étudiant est interdite. Toute consultation de ressources non autorisées est interdite. Toute aide extérieure est interdite.<br><strong>Matériel interdit :</strong> téléphone cellulaire, tablette électronique, ordinateur portable non autorisé, montre intelligente, écouteurs, outils d’intelligence artificielle incluant ChatGPT, applications de communication comme WhatsApp ou Messenger, échange ou prêt de matériel entre étudiants.</td></tr>
+  </table>
+  <table class="info-table total-row"><tr><td>Total</td><td style="width:80px;background:#efefef"></td><td style="width:70px;background:#efefef">/ 100</td></tr></table>
+  <div class="page-footer"><span>Examen final</span><span>Page 1 sur 13</span></div>
+</section>
+
+<section class="page">
+<div class="header-line"><span>420-2A4-UC (2026)</span><span>Programmation II: débogage informatique</span></div>
+<div class="section-band"><span>Partie 1 : (Théorique) 18 pts</span><span>Comprendre quand utiliser le débogage</span></div>
+<p>Alain est un nouveau programmeur dans une petite entreprise. Son responsable lui demande de créer un programme Python permettant de gérer une petite commande client.</p>
+<p>Le programme doit demander à l’utilisateur les informations suivantes :</p>
+<ul><li>le nom du client ;</li><li>la liste des produits achetés ;</li><li>le prix de chaque produit ;</li><li>la quantité achetée ;</li><li>le montant payé par le client.</li></ul>
+<p>Ensuite, le programme doit calculer le montant total de la facture, vérifier si le client a payé suffisamment, puis afficher un résumé clair de la transaction.</p>
+<p>Alain développe son programme dans Visual Studio Code. Comme il veut bien faire les choses, il écrit un programme assez long contenant plusieurs fonctions, des listes, des conditions et des calculs.</p>
+<div class="situation-title">Situation 1</div>
+<p>Après avoir terminé son code, Alain remarque que certaines instructions sont soulignées par Visual Studio Code. Il pense alors commencer immédiatement une phase de débogage pour comprendre pourquoi ces instructions sont soulignées.</p>
+<div class="q-line">- Ce qu’il voit correspond probablement à des erreurs de : <input class="line-input wide" data-answer name="p1_s1_type" id="p1_s1_type" autocomplete="off" placeholder="" ></div>
+<div class="q-line">- Alain a-t-il raison de commencer tout de suite une phase de débogage ?</div>
+<div class="choice-group">
+<label class="choice"><input type="radio" data-answer name="p1_s1_oui_non" value="Oui"> Oui</label>
+<label class="choice"><input type="radio" data-answer name="p1_s1_oui_non" value="Non"> Non</label>
+</div>
+<div class="q-line">- Expliquez pourquoi :</div><textarea class="answer-area lines2" data-answer data-minh="54" name="p1_s1_explication" id="p1_s1_explication" autocomplete="off"></textarea>
+<div class="situation-title">Situation 2</div>
+<p>Alain corrige les soulignements indiqués par Visual Studio Code. Son programme ne contient maintenant plus d’erreurs visibles.</p>
+<p>Il lance le programme. Au début, tout semble fonctionner : le programme demande le nom du client, les produits, les prix et les quantités.</p>
+<p>Cependant, au moment de faire les calculs, le programme s’arrête brusquement. Un message indique qu’il tente d’accéder à une position inexistante dans une liste.</p>
+<div class="q-line">- On parle ici d’une erreur de : <input class="line-input wide" data-answer name="p1_s2_type" id="p1_s2_type" autocomplete="off" placeholder="" ></div>
+<div class="q-line">- Est-ce une bonne raison pour commencer une phase de débogage ?</div>
+<div class="choice-group">
+<label class="choice"><input type="radio" data-answer name="p1_s2_oui_non" value="Oui"> Oui</label>
+<label class="choice"><input type="radio" data-answer name="p1_s2_oui_non" value="Non"> Non</label>
+</div>
+<div class="q-line">- Expliquez pourquoi :</div><textarea class="answer-area lines2" data-answer data-minh="54" name="p1_s2_explication" id="p1_s2_explication" autocomplete="off"></textarea>
+<div class="page-footer"><span>Examen final</span><span>Page 2 sur 13</span></div>
+</section>
+
+<section class="page">
+<div class="header-line"><span>420-2A4-UC (2026)</span><span>Programmation II: débogage informatique</span></div>
+<div class="situation-title">Situation 3</div>
+<p>Alain réussit ensuite à corriger le blocage. Le programme s’exécute maintenant jusqu’à la fin et affiche une facture.</p>
+<p>En fait le programme affiche :</p>
+<img class="fig invoice" src="assets/images/facture.jpg" alt="Facture affichée avec montant total incohérent">
+<p>Le programme ne plante pas, mais le résultat ne plaît pas à Alain car trois produits ont été achetés et le montant total ne devrait pas être égal à zéro.</p>
+<div class="q-line">- On parle ici d’une erreur de : <input class="line-input wide" data-answer name="p1_s3_type" id="p1_s3_type" autocomplete="off" placeholder="" ></div>
+<div class="q-line">- Est-ce une bonne raison pour commencer une phase de débogage ?</div>
+<div class="choice-group">
+<label class="choice"><input type="radio" data-answer name="p1_s3_oui_non" value="Oui"> Oui</label>
+<label class="choice"><input type="radio" data-answer name="p1_s3_oui_non" value="Non"> Non</label>
+</div>
+<div class="q-line">- Expliquez pourquoi :</div><textarea class="answer-area lines2" data-answer data-minh="54" name="p1_s3_explication" id="p1_s3_explication" autocomplete="off"></textarea>
+<div class="page-footer"><span>Examen final</span><span>Page 3 sur 13</span></div>
+</section>
+
+<section class="page">
+<div class="header-line"><span>420-2A4-UC (2026)</span><span>Programmation II: débogage informatique</span></div>
+<div class="situation-title">Situation 4</div>
+<p>Alain a oublié les grandes étapes à suivre pour commencer une démarche de débogage.</p>
+<p>Indiquez brièvement les principales étapes qu’il devrait suivre. Il n’est pas nécessaire de décrire les clics exacts dans Visual Studio Code. Expliquez plutôt la démarche générale.</p>
+<div class="q-line">Réponse :</div><textarea class="answer-area lines4" data-answer data-minh="108" name="p1_s4_reponse" id="p1_s4_reponse" autocomplete="off"></textarea>
+<div class="section-band"><span>Partie 2 : (Théorique) 42 pts</span><span>Analyse de captures, de variables et d’erreurs Python</span></div>
+<div class="section-light"><span>Tâche 1</span><span class="right">Analyse de l’état et du comportement des variables dans un environnement de débogage Python</span></div>
+<div class="bullet-title">▪ Évaluation des variables pendant le débogage</div>
+<p>Observez la capture d’écran du débogueur en cours d’exécution et identifiez la variable qui est sur le point d’être modifiée. Indiquez également quelle sera la nouvelle valeur de cette variable après l’exécution de la ligne de code en surbrillance.</p>
+<p><strong>Cas 1 :</strong></p>
+<img class="fig" src="assets/images/cas1-debug.jpg" alt="Cas 1 débogueur Python">
+<div class="q-line">En cliquant sur l’outil <strong>Continue</strong> ▶️</div>
+<div class="q-line">Prochaine valeur de etape3 : <input class="line-input wide" data-answer name="p2_cas1_etape3" id="p2_cas1_etape3" autocomplete="off" placeholder="" ></div>
+<div class="page-footer"><span>Examen final</span><span>Page 4 sur 13</span></div>
+</section>
+
+<section class="page">
+<div class="header-line"><span>420-2A4-UC (2026)</span><span>Programmation II: débogage informatique</span></div>
+<p><strong>Cas 2 :</strong></p>
+<img class="fig" src="assets/images/cas2-debug.png" alt="Cas 2 débogueur Python">
+<div class="q-line">En cliquant sur l’outil <strong>Continue</strong> ▶️</div>
+<div class="q-line">Prochaine valeur de notes : <input class="line-input wide" data-answer name="p2_cas2_notes" id="p2_cas2_notes" autocomplete="off" placeholder="" ></div>
+<p><strong>Cas 3 :</strong></p>
+<img class="fig" src="assets/images/cas3-debug.png" alt="Cas 3 débogueur Python">
+<div class="q-line">En cliquant sur l’outil <strong>Continue</strong> ▶️</div>
+<div class="q-line">Prochaine valeur de : Colonne_somme = [ <input class="line-input wide" data-answer name="p2_cas3_colonne" id="p2_cas3_colonne" autocomplete="off" placeholder="" > ]</div>
+<div class="page-footer"><span>Examen final</span><span>Page 5 sur 13</span></div>
+</section>
+
+<section class="page">
+<div class="header-line"><span>420-2A4-UC (2026)</span><span>Programmation II: débogage informatique</span></div>
+<p><strong>Cas 4 :</strong></p>
+<img class="fig" src="assets/images/cas4-debug.png" alt="Cas 4 débogueur Python">
+<div class="q-line">En cliquant sur l’outil <strong>Continue</strong> ▶️</div>
+<div class="q-line">Matrice_triee : [[1,2,3], <input class="line-input wide" data-answer name="p2_cas4_matrice" id="p2_cas4_matrice" autocomplete="off" placeholder="" > ]</div>
+<div class="bullet-title">▪ Position du Curseur de Débogage</div>
+<p>Observez attentivement les deux extraits de code Python suspendus dans leur exécution par l’environnement de débogage. Analysez l’état des variables et la position actuelle du curseur du débogueur dans chaque extrait.</p>
+<p>Préciser quelle ligne sera exécutée en suivant immédiatement dans chaque script.</p>
+<p><strong>Cas 5 :</strong></p>
+<img class="fig" src="assets/images/cas5-debug.png" alt="Cas 5 curseur de débogage">
+<div class="q-line">En cliquant sur l’outil <strong>Continue</strong> ▶️, la prochaine ligne déboguée sera : <input class="line-input wide" data-answer name="p2_cas5_ligne" id="p2_cas5_ligne" autocomplete="off" placeholder="" ></div>
+<div class="page-footer"><span>Examen final</span><span>Page 6 sur 13</span></div>
+</section>
+
+<section class="page">
+<div class="header-line"><span>420-2A4-UC (2026)</span><span>Programmation II: débogage informatique</span></div>
+<p><strong>Cas 6 :</strong></p>
+<img class="fig" src="assets/images/cas6-debug.png" alt="Cas 6 curseur de débogage">
+<div class="q-line">En cliquant sur l’outil <strong>Continue</strong> ▶️, la prochaine ligne déboguée sera : <input class="line-input wide" data-answer name="p2_cas6_ligne" id="p2_cas6_ligne" autocomplete="off" placeholder="" ></div>
+<div class="bullet-title">▪ Analyse d’erreur</div>
+<p>Explique pourquoi une erreur de ce type peut survenir pour chaque programme en indiquant la cause précise de l’erreur et en proposant une solution simple pour l’éviter tout en conservant le fonctionnement du programme.</p>
+<p><strong>Cas 7 :</strong></p>
+<img class="fig" src="assets/images/cas7-erreur.png" alt="Cas 7 erreur ValueError">
+<div class="q-line">Cause de l’erreur : <input class="line-input wide" data-answer name="p2_cas7_cause" id="p2_cas7_cause" autocomplete="off" placeholder="" ></div>
+<div class="q-line">Solution proposée :</div><textarea class="answer-area lines2" data-answer data-minh="54" name="p2_cas7_solution" id="p2_cas7_solution" autocomplete="off"></textarea>
+<div class="page-footer"><span>Examen final</span><span>Page 7 sur 13</span></div>
+</section>
+
+<section class="page">
+<div class="header-line"><span>420-2A4-UC (2026)</span><span>Programmation II: débogage informatique</span></div>
+<p><strong>Cas 8 :</strong></p>
+<img class="fig" src="assets/images/cas8-erreur.png" alt="Cas 8 erreur de séparation de valeurs">
+<div class="q-line">Cause de l’erreur : <input class="line-input wide" data-answer name="p2_cas8_cause" id="p2_cas8_cause" autocomplete="off" placeholder="" ></div>
+<div class="q-line">Solution proposée :</div><textarea class="answer-area lines2" data-answer data-minh="54" name="p2_cas8_solution" id="p2_cas8_solution" autocomplete="off"></textarea>
+<div class="bullet-title">Gestion des erreurs liées aux fichiers : Choisir la bonne réponse</div>
+<p><strong>Cas 9 :</strong></p>
+<pre class="code-block">try:
+    with open('fichier_exemple.txt', 'r') as fichier:
+        contenu = fichier.read()
+        print(contenu)
+except FileNotFoundError:
+    print("Erreur : Code 001")
+except PermissionError:
+    print("Erreur : Code 002")
+except Exception:
+    print("Erreur : Code 003")</pre>
+<p>L’utilisateur voit bien le fichier <strong>fichier_exemple.txt</strong> dans son dossier, mais lorsqu’il exécute le script, un message d’erreur s’affiche immédiatement sans même lire le contenu, et son ordinateur est configuré avec des restrictions qui limitent certaines actions sur les fichiers du système.</p>
+<div class="choice-list"><label class="choice"><input type="radio" data-answer name="p2_cas9_choix" value="&quot;Erreur : Code 002&quot;"> &quot;Erreur : Code 002&quot;</label><label class="choice"><input type="radio" data-answer name="p2_cas9_choix" value="&quot;Erreur : Code 001&quot;"> &quot;Erreur : Code 001&quot;</label><label class="choice"><input type="radio" data-answer name="p2_cas9_choix" value="&quot;Erreur : Code 003&quot;"> &quot;Erreur : Code 003&quot;</label><label class="choice"><input type="radio" data-answer name="p2_cas9_choix" value="Aucune des réponses n’est correcte."> Aucune des réponses n’est correcte.</label></div>
+<div class="page-footer"><span>Examen final</span><span>Page 8 sur 13</span></div>
+</section>
+
+<section class="page">
+<div class="header-line"><span>420-2A4-UC (2026)</span><span>Programmation II: débogage informatique</span></div>
+<p><strong>Cas 10 :</strong></p>
+<pre class="code-block">try:
+    with open('fichier_donnees', 'r') as fichier:
+        contenu = fichier.read()
+except FileNotFoundError:
+    print("Erreur : Code 301")
+except IsADirectoryError:
+    print("Erreur : Code 302")
+except Exception:
+    print("Erreur : Code 303")</pre>
+<p>Quel message sera affiché ?</p>
+<div class="choice-list"><label class="choice"><input type="radio" data-answer name="p2_cas10_choix" value="&quot;Erreur : Code 301&quot;"> &quot;Erreur : Code 301&quot;</label><label class="choice"><input type="radio" data-answer name="p2_cas10_choix" value="&quot;Erreur : Code 302&quot;"> &quot;Erreur : Code 302&quot;</label><label class="choice"><input type="radio" data-answer name="p2_cas10_choix" value="&quot;Erreur : Code 303&quot;"> &quot;Erreur : Code 303&quot;</label><label class="choice"><input type="radio" data-answer name="p2_cas10_choix" value="Aucune des réponses n’est correcte."> Aucune des réponses n’est correcte.</label></div>
+<div class="section-light"><span>Tâche 2</span><span class="right">Gestion des exceptions en Python</span></div>
+<p>• Identifiez deux mots-clés spécifiques de Python utilisés pour la gestion des exceptions.</p>
+<div class="q-line">Mot-clé 1 : <input class="line-input medium" data-answer name="p2_t2_mot1" id="p2_t2_mot1" autocomplete="off" placeholder="" > Mot-clé 2 : <input class="line-input medium" data-answer name="p2_t2_mot2" id="p2_t2_mot2" autocomplete="off" placeholder="" ></div>
+<p>• En décrivant un exemple sur la conversion de chaînes de caractères en nombres entiers, expliquez l’utilité de ces mots-clés dans le cadre de la programmation robuste en Python.</p>
+<textarea class="answer-area lines4" data-answer data-minh="108" name="p2_t2_explication" id="p2_t2_explication" autocomplete="off"></textarea>
+<div class="page-footer"><span>Examen final</span><span>Page 9 sur 13</span></div>
+</section>
+
+<section class="page">
+<div class="header-line"><span>420-2A4-UC (2026)</span><span>Programmation II: débogage informatique</span></div>
+<div class="section-light"><span>Tâche 3</span><span class="right">Identification des types d’exceptions</span></div>
+<p>Associez chaque extrait de code au type d’exception qui sera levé. Utilisez les choix suivants :</p>
+<table class="exception-map"><tr><th>a</th><th>b</th><th>c</th><th>d</th></tr><tr><td>TypeError</td><td>IndexError</td><td>NameError</td><td>ZeroDivisionError</td></tr></table>
+<p><strong>Extrait 1</strong></p>
+<pre class="code-light">def addition(x, y):
+    return x + y
+
+resultat = addition("Bonjour", 5)
+print(resultat)</pre>
+<div class="q-line"><strong>Type d’exception :</strong> <div class="radio-row"><label class="choice"><input type="radio" data-answer name="p2_t3_ext1" value="a"> a</label><label class="choice"><input type="radio" data-answer name="p2_t3_ext1" value="b"> b</label><label class="choice"><input type="radio" data-answer name="p2_t3_ext1" value="c"> c</label><label class="choice"><input type="radio" data-answer name="p2_t3_ext1" value="d"> d</label></div></div>
+<p><strong>Extrait 2</strong></p>
+<pre class="code-light">def afficher_element(liste, index):
+    return liste[index]
+
+valeurs = [4, 5, 6]
+print(afficher_element(valeurs, 5))</pre>
+<div class="q-line"><strong>Type d’exception :</strong> <div class="radio-row"><label class="choice"><input type="radio" data-answer name="p2_t3_ext2" value="a"> a</label><label class="choice"><input type="radio" data-answer name="p2_t3_ext2" value="b"> b</label><label class="choice"><input type="radio" data-answer name="p2_t3_ext2" value="c"> c</label><label class="choice"><input type="radio" data-answer name="p2_t3_ext2" value="d"> d</label></div></div>
+<p><strong>Extrait 3</strong></p>
+<pre class="code-light">valeurs = [8, 9, 3, 6, 4]
+index = [5, 2, 6]
+
+for i in range(len(valeurs)) :
+    print(valeurs[i]+index[i])</pre>
+<div class="q-line"><strong>Type d’exception :</strong> <div class="radio-row"><label class="choice"><input type="radio" data-answer name="p2_t3_ext3" value="a"> a</label><label class="choice"><input type="radio" data-answer name="p2_t3_ext3" value="b"> b</label><label class="choice"><input type="radio" data-answer name="p2_t3_ext3" value="c"> c</label><label class="choice"><input type="radio" data-answer name="p2_t3_ext3" value="d"> d</label></div></div>
+<p><strong>Extrait 4</strong></p>
+<pre class="code-light">valeurs = []
+index = [5, 2, 6]
+
+nb = len(valeurs)
+moyenne = index[0] + index[2] / nb
+print(moyenne)</pre>
+<div class="q-line"><strong>Type d’exception :</strong> <div class="radio-row"><label class="choice"><input type="radio" data-answer name="p2_t3_ext4" value="a"> a</label><label class="choice"><input type="radio" data-answer name="p2_t3_ext4" value="b"> b</label><label class="choice"><input type="radio" data-answer name="p2_t3_ext4" value="c"> c</label><label class="choice"><input type="radio" data-answer name="p2_t3_ext4" value="d"> d</label></div></div>
+<div class="page-footer"><span>Examen final</span><span>Page 10 sur 13</span></div>
+</section>
+
+<section class="page">
+<div class="header-line"><span>420-2A4-UC (2026)</span><span>Programmation II: débogage informatique</span></div>
+<div class="section-band"><span>Partie 3 : 40 pts</span><span>Amélioration et validation de script pour la gestion budgétaire quotidienne</span></div>
+<div class="notice red">
+  <p><strong>Important :</strong> la partie pratique ne se fait pas dans ce formulaire.</p>
+  <p>L’étudiant recevra le code Python et les tâches à faire sur <strong>LÉA-Travaux &gt; Évaluations</strong>, dans l’évaluation nommée <strong>Examen final débogage hiver 2026</strong>.</p>
+  <p>Vous devez d’abord <strong>exporter ce formulaire en PDF</strong>, puis <strong>fermer complètement cet examen</strong> avant de commencer la partie pratique séparée sur LÉA.</p>
+</div>
+<div class="notice">
+  <strong>Rappel pour l’export :</strong> l’export PDF est considéré comme la remise finale. Après confirmation, les réponses sont verrouillées. Le PDF généré doit contenir les réponses des parties 1 et 2, les choix cochés, l’identification de l’étudiant, le code Firebase, l’heure d’activation, l’heure d’export final, l’ID de session, l’empreinte de vérification, l’empreinte de copie finale et les incidents éventuels de surveillance.
+</div>
+<div class="print-only">
+  <h3>Incidents enregistrés pendant l’examen</h3>
+  <ul id="incidentPrintList"><li>Aucun incident enregistré.</li></ul>
+</div>
+<div class="page-footer"><span>Examen final</span><span>Page 11 sur 13</span></div>
+</section>
+
+<section class="page landscape">
+<div class="header-line"><span>420-2A4-UC (2026)</span><span>Programmation II: débogage informatique</span></div>
+<div class="rubric-title">Correction objective (60 points) - parties 1 et 2</div>
+<table class="rubric-table">
+<tr><th style="width:28%">Élément évalué</th><th>Répartition précise</th><th style="width:8%">Points</th></tr>
+<tr><td><strong>Partie 1 - Situation 1 :</strong><br>3.2 Repérage complet des erreurs.</td><td>Type d’erreur reconnu : erreurs de syntaxe, de saisie ou signalements détectés avant l’exécution (1 pt). Réponse attendue : non, ce n’est pas encore une vraie phase de débogage d’exécution (1 pt). Justification claire : le débogage sert surtout à analyser un programme qui s’exécute ou produit un mauvais comportement, alors que les erreurs de syntaxe doivent d’abord être corrigées (2 pts).</td><td class="points">____ / 4</td></tr>
+<tr><td><strong>Partie 1 - Situation 2 :</strong><br>3.2 Repérage complet des erreurs.</td><td>Erreur reconnue : erreur d’exécution liée à l’accès à une position inexistante dans une liste, de type IndexError ou équivalent (1 pt). Réponse attendue : oui, c’est une bonne raison de déboguer (1 pt). Justification claire : le programme démarre, mais s’arrête pendant l’exécution; le débogage permet de suivre les variables, les indices et le chemin exécuté (2 pts).</td><td class="points">____ / 4</td></tr>
+<tr><td><strong>Partie 1 - Situation 3 :</strong><br>4.2 Repérage complet des erreurs de fonctionnement.</td><td>Erreur reconnue : erreur logique ou erreur de calcul (1 pt). Réponse attendue : oui, c’est une bonne raison de déboguer (1 pt). Justification claire : le programme se termine, mais le résultat affiché est incohérent; le débogage permet de vérifier les valeurs intermédiaires et la logique du calcul (2 pts).</td><td class="points">____ / 4</td></tr>
+<tr><td><strong>Partie 1 - Situation 4 :</strong><br>3.1 Utilisation efficace du débogueur; 3.3 Détermination judicieuse de stratégies de correction des erreurs.</td><td>Réponse structurée contenant les étapes essentielles : reproduire le problème (1 pt), repérer la zone probable de l’erreur (1 pt), placer un point d’arrêt ou ralentir l’exécution (1 pt), exécuter pas à pas (1 pt), observer les variables et conditions (1 pt), corriger puis retester (1 pt).</td><td class="points">____ / 6</td></tr>
+<tr><td class="green"><strong>Sous-total - Partie 1</strong></td><td class="green">Comprendre quand utiliser le débogage et expliquer une démarche générale.</td><td class="points green">____ / 18</td></tr>
+<tr><td><strong>Partie 2 - Tâche 1, cas 1 à 4 :</strong><br>3.1 Utilisation efficace du débogueur.</td><td>4 cas × 2 pts. Pour chaque cas : variable correctement ciblée (1 pt) et nouvelle valeur correctement déduite après l’exécution de la ligne en surbrillance (1 pt).</td><td class="points">____ / 8</td></tr>
+<tr><td><strong>Partie 2 - Tâche 1, cas 5 et 6 :</strong><br>3.1 Utilisation efficace du débogueur.</td><td>2 cas × 3 pts. Pour chaque cas : ligne suivante correctement identifiée (2 pts) et justification cohérente avec la logique d’exécution ou le flux du programme (1 pt).</td><td class="points">____ / 6</td></tr>
+<tr><td><strong>Partie 2 - Tâche 1, cas 7 et 8 :</strong><br>3.2 Repérage complet des erreurs; 3.3 Détermination judicieuse de stratégies de correction des erreurs.</td><td>2 cas × 4 pts. Pour chaque cas : cause précise de l’erreur (2 pts), solution simple et pertinente (1,5 pt), conservation du fonctionnement attendu du programme (0,5 pt).</td><td class="points">____ / 8</td></tr>
+<tr><td><strong>Partie 2 - Tâche 1, cas 9 et 10 :</strong><br>3.2 Repérage complet des erreurs.</td><td>2 cas × 3 pts. Pour chaque cas : bonne réponse cochée (2 pts) et compréhension implicite du type d’erreur ou du comportement Python (1 pt).</td><td class="points">____ / 6</td></tr>
+<tr><td><strong>Partie 2 - Tâche 2 :</strong><br>3.3 Détermination judicieuse de stratégies de correction des erreurs; 3.5 Notation claire des solutions aux problèmes rencontrés.</td><td>Deux mots-clés corrects, par exemple try et except (2 pts). Exemple pertinent avec conversion d’une chaîne en entier, par exemple int(...) (2 pts). Explication de l’utilité pour éviter l’arrêt du programme et redemander ou traiter l’entrée invalide (2 pts).</td><td class="points">____ / 6</td></tr>
+<tr><td><strong>Partie 2 - Tâche 3 :</strong><br>3.2 Repérage complet des erreurs.</td><td>4 extraits × 2 pts. Chaque réponse associe correctement l’extrait au type d’exception attendu : TypeError, IndexError, NameError ou ZeroDivisionError.</td><td class="points">____ / 8</td></tr>
+<tr><td class="green"><strong>Sous-total - Partie 2</strong></td><td class="green">Analyse de captures, variables, curseur de débogage, erreurs et exceptions Python.</td><td class="points green">____ / 42</td></tr>
+<tr><td class="total" colspan="2">Total du barème objectif</td><td class="points green">____ / 60</td></tr>
+</table>
+<div class="page-footer"><span>Examen final</span><span>Page 12 sur 13</span></div>
+</section>
+
+<section class="page landscape">
+<div class="header-line"><span>420-2A4-UC (2026)</span><span>Programmation II: débogage informatique</span></div>
+<div class="rubric-title">Grille d’évaluation critériée (40 points) - partie 3 pratique</div>
+<table class="rubric-table">
+<tr><th colspan="7" style="text-align:left">Compétence : Déboguer le code et tests fonctionnels. (40 points)</th></tr>
+<tr><th style="width:21%">Critère d’évaluation</th><th>Maîtrise très insuffisante</th><th>Maîtrise faible</th><th>Maîtrise acceptable</th><th>Maîtrise bonne</th><th>Maîtrise très bonne</th><th>Note</th></tr>
+<tr><td><strong>Tâche : contrôles de saisie et validation des données utilisateur.</strong><br><br><strong>Critères liés :</strong> 3.3 déterminations de stratégies de correction; 4.3 pertinences des correctifs.</td><td>Les contrôles de saisie sont absents ou inutilisables; le programme accepte des valeurs invalides sans les traiter.<br><br><strong>0</strong></td><td>Quelques contrôles sont tentés, mais ils sont incomplets, mal placés ou ne redemandent pas correctement la saisie.<br><br><strong>2</strong></td><td>Les contrôles principaux sont présents pour certaines valeurs; le programme redemande parfois la saisie, mais la validation reste partielle.<br><br><strong>4</strong></td><td>Les contrôles sont globalement corrects; les valeurs importantes sont validées et les mauvaises saisies sont généralement redemandées.<br><br><strong>7</strong></td><td>Les contrôles sont complets, cohérents et robustes; les prix, quantités et montants sont validés clairement, avec une logique stable.<br><br><strong>10</strong></td><td></td></tr>
+<tr><td><strong>Tâche : gestion des exceptions et prévention des erreurs d’exécution.</strong><br><br><strong>Critères liés :</strong> 3.2 repérage complet des erreurs; 3.3 stratégies de correction; 4.2 repérages des erreurs de fonctionnement.</td><td>Aucun bloc try...except pertinent n’est présent; une saisie non numérique provoque encore l’arrêt du programme.<br><br><strong>0</strong></td><td>Un bloc try...except existe, mais il est mal utilisé, trop limité ou ne protège pas les saisies importantes.<br><br><strong>2</strong></td><td>La gestion des exceptions fonctionne dans des cas simples, mais certaines saisies invalides ou certains messages restent mal traités.<br><br><strong>4</strong></td><td>La gestion des exceptions est correcte et protège les saisies principales contre les erreurs comme ValueError.<br><br><strong>7</strong></td><td>La gestion des exceptions est rigoureuse, bien placée et bien expliquée; le programme reste stable même avec des entrées invalides répétées.<br><br><strong>10</strong></td><td></td></tr>
+<tr><td><strong>Tâche : assertions et tests d’intégrité du programme.</strong><br><br><strong>Critères liés :</strong> 4.1 rigueurs; 4.5 notation claire de l’information relative aux tests et à leurs résultats.</td><td>Aucune assertion utile n’est ajoutée ou les assertions empêchent le fonctionnement normal du programme.<br><br><strong>0</strong></td><td>Les assertions sont très partielles ou mal formulées; elles ne vérifient pas clairement les conditions demandées.<br><br><strong>2</strong></td><td>Les assertions principales sont présentes, mais leur emplacement, leur message ou leur utilité restent partiellement maîtrisés.<br><br><strong>4</strong></td><td>Les assertions demandées sont correctement intégrées et vérifient les conditions essentielles du programme.<br><br><strong>7</strong></td><td>Les assertions sont pertinentes, lisibles et bien placées; elles vérifient clairement le total positif et la limite du nombre d’articles.<br><br><strong>10</strong></td><td></td></tr>
+<tr><td><strong>Tâche : fonctionnement global, pertinence des correctifs, lisibilité et commentaires.</strong><br><br><strong>Critères liés :</strong> 3.4 pertinences des correctifs; 3.5 notation claire des solutions; 4.4 fonctionnement correct du programme.</td><td>Le programme ne fonctionne pas ou le script remis est très incomplet; les calculs de facture ne sont pas conservés.<br><br><strong>0</strong></td><td>Le programme fonctionne seulement de manière très partielle; plusieurs erreurs, oublis ou modifications non pertinentes nuisent au résultat.<br><br><strong>2</strong></td><td>Le programme fonctionne dans des cas simples; les calculs et l’affichage sont généralement présents, mais la finition reste inégale.<br><br><strong>4</strong></td><td>Le programme fonctionne correctement dans la majorité des cas; les calculs, l’affichage et les commentaires sont clairs.<br><br><strong>7</strong></td><td>Le programme est complet, stable, lisible et bien commenté; les correctifs respectent le script initial et améliorent réellement sa robustesse.<br><br><strong>10</strong></td><td></td></tr>
+<tr><td colspan="6" class="total">Note de compétence</td><td class="points">___ /40</td></tr>
+<tr><td colspan="6" class="total" style="font-size:15px">Total général de l’examen (barème objectif + grille critériée)</td><td class="points green">___ /100</td></tr>
+</table>
+<div class="page-footer"><span>Examen final</span><span>Page 13 sur 13</span></div>
+</section>
+
+</div>
+<script type="module" src="script.js"></script>
+</body>
+</html>
