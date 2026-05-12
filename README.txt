@@ -1,27 +1,12 @@
-Version Firebase avec preuve de vérification et verrouillage dur après export final.
+Examen final installation hiver 2026 — version formulaire HTML sécurisé.
 
-À publier sur GitHub Pages :
-- index.html
-- style.css
-- style_print.css
-- script.js
-- droits.html
-- assets/
-- README.txt
-- README_PUBLICATION.txt
-- FIRESTORE_RULES_PREUVE_VERIFICATION.txt
+Cette version reprend la logique stable validée pour l’examen de débogage :
+- validation Firebase par code unique à 10 chiffres ;
+- identité verrouillée ;
+- preuve de vérification ;
+- plein écran obligatoire ;
+- incidents de sortie plein écran ;
+- export PDF final ;
+- verrouillage dur après export final.
 
-À ne jamais publier :
-- serviceAccountKey.json
-- codes-enseignant.txt
-- dossier aa-firebase-codes-debogage-hiver-2026
-
-Fonctions principales :
-- validation du code unique via Firebase Firestore ;
-- identité verrouillée après validation ;
-- preuve de vérification dans le PDF ;
-- minuterie et plein écran ;
-- incidents uniquement pour sorties du plein écran ;
-- export PDF considéré comme remise finale ;
-- après export final, reprise interdite même après fermeture, retour arrière, restauration du navigateur ou rechargement ;
-- réexport possible seulement de la copie finale verrouillée.
+IMPORTANT : avant publication, remplacer firebaseConfig dans script.js par la configuration du projet Firebase Installation.

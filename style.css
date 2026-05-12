@@ -20,6 +20,8 @@ body.no-select{-webkit-user-select:none;user-select:none;}
 .incident-box{background:#5b0000;border:2px solid #ff3b3b;color:#fff;min-width:230px;max-width:360px;overflow:hidden;text-overflow:ellipsis;}
 .incident-box.danger{animation:flashRed .55s ease-in-out 0s 5;}
 @keyframes flashRed{0%{background:#5b0000;transform:scale(1)}50%{background:#ff0000;transform:scale(1.02)}100%{background:#5b0000;transform:scale(1)}}
+.progress-title{display:block;font-size:11px;color:#ddd;line-height:1.1;}
+#progressText{display:block;font-weight:800;color:#fff;line-height:1.2;}
 .progress-wrap{height:9px;width:260px;border-radius:999px;background:#555;overflow:hidden;border:1px solid #777;margin-top:3px;}
 .progress-fill{height:100%;width:0%;background:linear-gradient(90deg,#86c67a,#f6d36b,#ff8c42);transition:width .25s;}
 .screen-btn{border:0;border-radius:6px;background:#fff;color:#111;font-weight:700;padding:8px 12px;cursor:pointer;font-size:12px;}
@@ -209,3 +211,23 @@ body.submitted-final .screen-btn.warn{
   }
   .final-submission-gate{display:none!important;}
 }
+
+
+/* Adaptations examen installation */
+.exam-title .percent{font-size:16px;display:block;margin-top:4px;}
+.question{margin:12px 0 18px;}
+.question-title{font-weight:800;margin:8px 0 5px;}
+.question-points{float:right;font-size:12px;font-weight:700;font-style:italic;}
+.choice-list.flush{margin-left:0;}
+.choice-line{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e0e0e0;padding:6px 4px;gap:12px;}
+.choice-line .choice{margin-left:auto;}
+.dialogue p{margin:9px 0;}
+.inline-answer{border:0;border-bottom:1.5px solid #333;background:#fff;min-width:150px;height:22px;font:700 14px Arial;color:#063f94;padding:0 3px;outline:0;vertical-align:baseline;}
+.inline-answer.wide{min-width:210px;}
+.report-box{min-height:190px;}
+.gray-box{background:#f3f3f3;padding:8px 10px;margin:8px 0 12px;}
+.objective-table{border-collapse:collapse;width:100%;font-size:11px;margin:8px 0 15px;}
+.objective-table th{background:#d9d9d9;border:1px solid #111;padding:5px;text-align:center;}
+.objective-table td{border:1px solid #111;padding:5px;vertical-align:top;}
+.objective-table .total{background:#e2f0d9;font-weight:800;text-align:right;}
+@media print{.question{break-inside:avoid}.choice-line{padding:4px}.inline-answer{color:#063f94!important;font-weight:700!important}.report-box{min-height:170px}.question-title{break-after:avoid}}

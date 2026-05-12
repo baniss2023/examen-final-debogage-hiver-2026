@@ -10,22 +10,22 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBIC1aoPrWaeaj0nl2DHdgcdbJAsPPcvHE",
-  authDomain: "examen-debogage-hiver-2026.firebaseapp.com",
-  projectId: "examen-debogage-hiver-2026",
-  storageBucket: "examen-debogage-hiver-2026.firebasestorage.app",
-  messagingSenderId: "4781354722",
-  appId: "1:4781354722:web:2a233ebfe674fdcb3238bb"
+  apiKey: "AIzaSyCSE_Lka8_VUFJb5SMN6J5hJbVo7MT0uNM",
+  authDomain: "examen-installation-hive-713b2.firebaseapp.com",
+  projectId: "examen-installation-hive-713b2",
+  storageBucket: "examen-installation-hive-713b2.firebasestorage.app",
+  messagingSenderId: "144786426326",
+  appId: "1:144786426326:web:d4f993fcab98f0a46f7c77"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const EXAM_ID = "debogage_hiver_2026";
+const EXAM_ID = "installation_hiver_2026";
 const EXAM_DURATION_MS = 2 * 60 * 60 * 1000;
 const FS_LIMIT_SEC = 10;
-const STORAGE_PREFIX = "debogage_h2026_firebase_proof_v1_";
-const VERIFICATION_SOURCE = "debogage-h2026-firebase-proof-v1";
+const STORAGE_PREFIX = "installation_h2026_firebase_proof_v1_";
+const VERIFICATION_SOURCE = "installation-2026-firebase-proof-v1";
 const IDENTITY_FIELD_IDS = ["#ident_nom", "#ident_no", "#ident_groupe"];
 
 let examStarted = false;
@@ -349,7 +349,7 @@ function prepareResumeGate(){
   gate.innerHTML = `
     <div class="overlay-card">
       <h2>Reprise de l’examen</h2>
-      <p><strong>Examen final débogage hiver 2026</strong><br>L’accès a déjà été validé sur ce navigateur.</p>
+      <p><strong>Examen final installation hiver 2026</strong><br>L’accès a déjà été validé sur ce navigateur.</p>
       <p>Code utilisé : <strong>${localStorage.getItem(STORAGE_PREFIX + "accessCodeValue") || "code validé"}</strong></p>
       <p>Pour continuer, l’examen doit revenir en plein écran.</p>
       <div class="actions"><button onclick="resumeExam()">Reprendre l’examen en plein écran</button></div>
@@ -570,8 +570,11 @@ function saveField(el){
   if(getFinalExportState().locked) return;
   if(!el || (!el.name && !el.id)) return;
   const key = STORAGE_PREFIX + "field_" + (el.name || el.id);
-  if(el.type === "radio" || el.type === "checkbox"){
+  if(el.type === "radio"){
     if(el.checked) localStorage.setItem(key, el.value);
+  } else if(el.type === "checkbox"){
+    if(el.checked) localStorage.setItem(key, "1");
+    else localStorage.removeItem(key);
   } else {
     localStorage.setItem(key, el.value);
   }
@@ -583,8 +586,11 @@ function restoreFields(){
     const key = STORAGE_PREFIX + "field_" + (el.name || el.id);
     const v = localStorage.getItem(key);
     if(v !== null){
-      if(el.type === "radio" || el.type === "checkbox") el.checked = (el.value === v);
+      if(el.type === "radio") el.checked = (el.value === v);
+      else if(el.type === "checkbox") el.checked = (v === "1" || el.value === v);
       else el.value = v;
+    } else if(el.type === "checkbox"){
+      el.checked = false;
     }
   });
   qsa("textarea").forEach(autoResize);
@@ -594,10 +600,28 @@ function autoResize(el){
   el.style.height = "auto";
   el.style.height = Math.max(el.scrollHeight, el.dataset.minh ? Number(el.dataset.minh) : el.offsetHeight) + "px";
 }
+function getProgressFields(){
+  const explicit = qsa("[data-answer]");
+  if(explicit.length) return explicit;
+  return qsa("#examContent input, #examContent textarea, #examContent select").filter(el=>{
+    if(!el.name && !el.id) return false;
+    if(el.type === "hidden" || el.type === "button" || el.type === "submit") return false;
+    if(el.closest("#accessGate")) return false;
+    return true;
+  });
+}
+function checkboxProgressGroup(el){
+  if(el.dataset && el.dataset.answerGroup) return el.dataset.answerGroup;
+  const key = el.name || el.id || "checkbox";
+  const match = key.match(/^([a-z]+\d+)/i);
+  return match ? match[1] : key;
+}
 function updateProgress(){
-  const fields = qsa("[data-answer]");
+  const fields = getProgressFields();
   let total = 0, done = 0;
   const radioGroups = new Set();
+  const checkboxGroups = new Map();
+
   fields.forEach(el=>{
     if(el.type === "radio"){
       if(!radioGroups.has(el.name)){
@@ -605,11 +629,21 @@ function updateProgress(){
         total++;
         if(qs(`input[name="${CSS.escape(el.name)}"]:checked`)) done++;
       }
+    } else if(el.type === "checkbox"){
+      const group = checkboxProgressGroup(el);
+      if(!checkboxGroups.has(group)) checkboxGroups.set(group, []);
+      checkboxGroups.get(group).push(el);
     } else {
       total++;
       if((el.value || "").trim().length > 0) done++;
     }
   });
+
+  checkboxGroups.forEach(groupFields=>{
+    total++;
+    if(groupFields.some(el=>el.checked)) done++;
+  });
+
   const pct = total ? Math.round(done/total*100) : 0;
   const fill = qs("#progressFill");
   if(fill) fill.style.width = pct + "%";
@@ -662,7 +696,7 @@ async function exportPdf(){
   await markFinalExportInFirebase(finalExportIso, finalExportText, finalHash);
   updateAccessDisplay();
 
-  alert("Rappel : votre copie est maintenant verrouillée. Après l’exportation du PDF, vous devez fermer complètement cet examen, puis commencer la partie pratique sur LÉA-Travaux > Évaluations, dans « Examen final débogage hiver 2026 ».");
+  alert("Rappel : votre copie est maintenant verrouillée. Après l’exportation du PDF, vous devez remettre ce PDF final dans LÉA-Travaux > Évaluations, dans « Examen final installation hiver 2026 ».");
   window.print();
   enforceFinalLockHard(true);
 }

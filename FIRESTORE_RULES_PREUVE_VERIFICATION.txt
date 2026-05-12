@@ -3,7 +3,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    match /examens/debogage_hiver_2026/codes/{codeId} {
+    match /examens/installation_hiver_2026/codes/{codeId} {
 
       allow list: if false;
 
@@ -20,7 +20,7 @@ service cloud.firestore {
         && request.resource.data.usedAt == request.time
         && request.resource.data.usedBySessionId is string
         && request.resource.data.verificationFingerprint is string
-        && request.resource.data.verificationSource == "debogage-h2026-firebase-proof-v1"
+        && request.resource.data.verificationSource == "installation-2026-firebase-proof-v1"
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           "status",
           "usedAt",
@@ -30,7 +30,7 @@ service cloud.firestore {
         ]);
     }
 
-    match /examens/debogage_hiver_2026/accessLogs/{sessionId} {
+    match /examens/installation_hiver_2026/accessLogs/{sessionId} {
 
       allow read: if false;
       allow list: if false;
@@ -73,7 +73,7 @@ service cloud.firestore {
           "verificationSource",
           "userAgent"
         ])
-        && request.resource.data.examId == "debogage_hiver_2026"
+        && request.resource.data.examId == "installation_hiver_2026"
         && request.resource.data.code.matches('^[0-9]{10}$')
         && request.resource.data.studentName is string
         && request.resource.data.studentId is string
@@ -82,7 +82,7 @@ service cloud.firestore {
         && request.resource.data.activationClientIso is string
         && request.resource.data.activationClientText is string
         && request.resource.data.verificationFingerprint is string
-        && request.resource.data.verificationSource == "debogage-h2026-firebase-proof-v1"
+        && request.resource.data.verificationSource == "installation-2026-firebase-proof-v1"
         && request.resource.data.createdAt == request.time;
     }
 
