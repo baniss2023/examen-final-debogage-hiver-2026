@@ -96,3 +96,38 @@ body.fs-locked .screen-btn.export{pointer-events:none;opacity:.45;}
 .overlay-card.access-card input{font-size:18px;text-align:left;letter-spacing:0;text-transform:none;margin-bottom:4px;}
 .overlay-card.access-card #accessCode{text-align:center;letter-spacing:2px;font-weight:900;}
 .overlay-card button:disabled{opacity:.65;cursor:not-allowed;}
+
+
+/* Verrouillage de l'identité validée */
+.locked-identity{
+  pointer-events:none!important;
+  user-select:none!important;
+  background:#f3f8ff!important;
+  border-bottom:2px solid #063f94!important;
+  color:#063f94!important;
+  font-weight:900!important;
+}
+.locked-identity-badge{
+  display:inline-block;
+  margin-left:8px;
+  padding:2px 7px;
+  border:1px solid #063f94;
+  background:#eaf2ff;
+  color:#063f94;
+  font-size:10px;
+  font-weight:800;
+  vertical-align:middle;
+}
+.identity-warning-print{
+  color:#8b0000;
+  font-weight:900;
+}
+@media print{
+  .locked-identity{
+    border:0!important;
+    border-bottom:1px solid #063f94!important;
+    background:#fff!important;
+    color:#063f94!important;
+    font-weight:900!important;
+  }
+}

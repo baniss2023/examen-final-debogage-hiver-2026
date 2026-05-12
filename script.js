@@ -24,6 +24,7 @@ const EXAM_ID = "debogage_hiver_2026";
 const EXAM_DURATION_MS = 2 * 60 * 60 * 1000;
 const FS_LIMIT_SEC = 10;
 const STORAGE_PREFIX = "debogage_h2026_firebase_v1_";
+const IDENTITY_FIELD_IDS = ["#ident_nom", "#ident_no", "#ident_groupe"];
 
 let examStarted = false;
 let examEnd = 0;
@@ -68,28 +69,79 @@ function setInput(id, value){
     saveField(el);
   }
 }
+function getLockedIdentity(){
+  return {
+    code: localStorage.getItem(STORAGE_PREFIX + "accessCodeValue") || "",
+    time: localStorage.getItem(STORAGE_PREFIX + "accessUsedAtText") || "",
+    studentName: localStorage.getItem(STORAGE_PREFIX + "studentName") || "",
+    studentId: localStorage.getItem(STORAGE_PREFIX + "studentId") || "",
+    studentGroup: localStorage.getItem(STORAGE_PREFIX + "studentGroup") || "",
+    sessionId: localStorage.getItem(STORAGE_PREFIX + "sessionId") || ""
+  };
+}
+
+function lockIdentityFields(){
+  const ident = getLockedIdentity();
+  if(!ident.code) return;
+
+  const values = {
+    "#ident_nom": ident.studentName,
+    "#ident_no": ident.studentId,
+    "#ident_groupe": ident.studentGroup
+  };
+
+  Object.entries(values).forEach(([selector, value]) => {
+    const el = qs(selector);
+    if(!el) return;
+    if(el.value !== value) el.value = value;
+    el.readOnly = true;
+    el.setAttribute("aria-readonly", "true");
+    el.setAttribute("title", "Identité verrouillée après validation du code d’accès.");
+    el.classList.add("locked-identity");
+    saveField(el);
+  });
+}
+
+function enforceLockedIdentity(){
+  const ident = getLockedIdentity();
+  if(!ident.code) return;
+  const before = {
+    name: qs("#ident_nom")?.value || "",
+    id: qs("#ident_no")?.value || "",
+    group: qs("#ident_groupe")?.value || ""
+  };
+  lockIdentityFields();
+  const modified = before.name !== ident.studentName || before.id !== ident.studentId || before.group !== ident.studentGroup;
+  if(modified){
+    localStorage.setItem(STORAGE_PREFIX + "identityTamper", "1");
+    localStorage.setItem(STORAGE_PREFIX + "identityTamperTime", nowString());
+  }
+}
+
 function updateAccessDisplay(){
-  const code = localStorage.getItem(STORAGE_PREFIX + "accessCodeValue");
-  const time = localStorage.getItem(STORAGE_PREFIX + "accessUsedAtText");
-  const studentName = localStorage.getItem(STORAGE_PREFIX + "studentName");
-  const studentId = localStorage.getItem(STORAGE_PREFIX + "studentId");
-  const studentGroup = localStorage.getItem(STORAGE_PREFIX + "studentGroup");
+  const ident = getLockedIdentity();
   const top = qs("#studentCodeInfo");
   const print = qs("#accessCodePrint");
   const timePrint = qs("#accessTimePrint");
+  const lockedIdentityPrint = qs("#lockedIdentityPrint");
+  const sessionIdPrint = qs("#sessionIdPrint");
 
-  if(code){
-    const summary = `Code validé : ${code} — ${time || "heure non enregistrée"}`;
+  if(ident.code){
+    const summary = `Code validé : ${ident.code} — ${ident.time || "heure non enregistrée"}`;
     if(top) top.textContent = summary;
-    if(print) print.innerHTML = `<span class="code-access-print">${code}</span>`;
-    if(timePrint) timePrint.innerHTML = `<span class="code-access-print">${time || "Heure non enregistrée"}</span>`;
-    if(studentName) setInput("#ident_nom", studentName);
-    if(studentId) setInput("#ident_no", studentId);
-    if(studentGroup) setInput("#ident_groupe", studentGroup);
+    if(print) print.innerHTML = `<span class="code-access-print">${ident.code}</span>`;
+    if(timePrint) timePrint.innerHTML = `<span class="code-access-print">${ident.time || "Heure non enregistrée"}</span>`;
+    if(lockedIdentityPrint){
+      lockedIdentityPrint.innerHTML = `<span class="code-access-print">${ident.studentName || "Nom non saisi"}</span> — N° : <span class="code-access-print">${ident.studentId || "Non saisi"}</span> — Groupe : <span class="code-access-print">${ident.studentGroup || "Non saisi"}</span> <span class="locked-identity-badge">verrouillé</span>`;
+    }
+    if(sessionIdPrint) sessionIdPrint.innerHTML = `<span class="code-access-print">${ident.sessionId || "Session non enregistrée"}</span>`;
+    lockIdentityFields();
   } else {
     if(top) top.textContent = "Code d’accès non validé";
     if(print) print.textContent = "Code non validé";
     if(timePrint) timePrint.textContent = "Heure non validée";
+    if(lockedIdentityPrint) lockedIdentityPrint.textContent = "Identité non validée";
+    if(sessionIdPrint) sessionIdPrint.textContent = "Session non validée";
   }
 }
 function addFullscreenIncident(durationSec, exceeded){
@@ -351,6 +403,7 @@ function updateProgress(){
   if(txt) txt.textContent = `${pct} % rempli`;
 }
 function exportPdf(){
+  enforceLockedIdentity();
   renderIncidents();
   updateAccessDisplay();
   alert("Rappel : après l’exportation du PDF, vous devez fermer complètement cet examen, puis commencer la partie pratique sur LÉA-Travaux > Évaluations, dans « Examen final débogage hiver 2026 ».");
@@ -373,9 +426,11 @@ window.addEventListener("DOMContentLoaded", ()=>{
   renderIncidents();
   restoreFields();
   updateAccessDisplay();
+  lockIdentityFields();
+  setInterval(enforceLockedIdentity, 3000);
   qsa("input,textarea,select").forEach(el=>{
-    el.addEventListener("input", ()=>{ saveField(el); if(el.tagName === "TEXTAREA") autoResize(el); });
-    el.addEventListener("change", ()=>saveField(el));
+    el.addEventListener("input", ()=>{ if(el.classList.contains("locked-identity")){ enforceLockedIdentity(); return; } saveField(el); if(el.tagName === "TEXTAREA") autoResize(el); });
+    el.addEventListener("change", ()=>{ if(el.classList.contains("locked-identity")){ enforceLockedIdentity(); return; } saveField(el); });
   });
   if(localStorage.getItem(STORAGE_PREFIX + "accessGranted") === "1") prepareResumeGate();
 });
